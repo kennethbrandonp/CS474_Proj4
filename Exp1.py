@@ -2,21 +2,49 @@ from pgm import PGM
 import numpy as np
 import fft
 
-def partA(pgm):
-    data = np.array(pgm.pixels) #Grab pixels from the image
+def bandRejectFilter(pgm, centerx, centery, radius):
+    data = np.array(pgm.pixels)
 
-    #Apply forward FFT:
+    #Apply forward:
     real, imag = fft.fft2D(pgm.x, pgm.y, data, np.zeros_like(data), -1)
 
-    #Magnitude spectrum:
-    magnitude = np.abs(real + 1j * imag)
-    magnitude = np.clip(np.ceil(magnitude).astype(int), 0, 255)
+    #Create a filter mask:
+    mask = np.ones_like(real)
+    y, x = np.ogrid[:pgm.y, :pgm.x] #Makes a circle around the origin
+    mask[((x - centerx)**2 + (y - centery)**2) < radius**2] = 0  #Set any values within band to zero
 
-    pgm.pixels = fft.magShift(magnitude)
-    #Save original magnitude spectrum:
-    pgm.save("_original_spectrum")  #Produces result but it's extremely dark, likely need to call upon partB in Exp3.py
+    #Apply this filter to the DFT of the image (Complex multiplication)
+    filteredReal = real * mask
+    filteredImag = imag * mask
+
+    #Apply inverse to get original image filtered back:
+    inverseReal, inverseImag = fft.fft2D(pgm.x, pgm.y, filteredReal, filteredImag, 1)
+
+    #Round to the nearest positive integer:
+    inverseReal = np.clip(np.ceil(inverseReal).astype(int), 0, 255)
+
+    #Flip it back to the original orientation
+    inverseReal = inverseReal[::-1, ::1]
+
+    return inverseReal
+
+def partA(pgm):
+    #Get the original spectrum so we can apply filters:
+    tempPGM = pgm
+    # originalSpectrum = fft.visDFT(tempPGM, 1) #To visualize the spectrum
+    # originalSpectrum = np.clip(np.ceil(originalSpectrum).astype(int), 0, 255)
+    # tempPGM.pixels = originalSpectrum
+    
+    # tempPGM.save("originalSpectrum")#For visualizing the spectrum
 
     #Band-Reject Filter:
+    tempPGM.pixels = bandRejectFilter(pgm, 32, 16, 1)  #Adjusted band(Still needs tuning)
+    bandReject = fft.visDFT(tempPGM, 1) #Visualize band reject filter
+    bandReject = np.clip(np.ceil(bandReject).astype(int), 0, 255)
+    tempPGM.pixels = bandReject
+
+    tempPGM.save("bandRejectFilter")
+    
     ##Band Reject filter and what parameters we're using:
     ###Which frequency range we're rejecting
     ###We'll have to tune the size of the band

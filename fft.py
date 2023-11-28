@@ -63,3 +63,38 @@ def magShift(data):
     n = len(data)
     half = n // 2
     return np.concatenate((data[half:], data[:half]))
+
+def visDFT(pgm, centered):
+    #Center spectrum:
+    if centered == 1:
+        for i in range(0, pgm.y):
+            for k in range(0, pgm.x):
+                pgm.pixels[i][k] = pgm.pixels[i][k] * math.pow(-1, i + k)
+
+    #Establish real and imaginary components:
+    real = np.array(pgm.pixels)
+    imag = np.zeros_like(real)
+
+    #Forward FFT:
+    freal, fimag = fft2D(pgm.x, pgm.y, real, imag, -1)
+
+    #Calculate magnitude and get everything in grayscale:
+    for i in range(0, pgm.y):
+        for k in range(0, pgm.x):
+            index = i * pgm.x + k
+            m = freal[i][k] * freal[i][k] + fimag[i][k] * fimag[i][k]
+            pgm.pixels[i][k] = clamp(0, 255, 120 * math.log2(1 + math.sqrt(m)))
+
+    return pgm.pixels   #We can specify what the name is saved outside the function
+    #Save centered image:
+    # if centered == 1:
+    #     pgm.save("_centered_dft")
+    # else:
+    #     pgm.save("_dft")
+
+def clamp(a, b, x):
+    if x > b:
+        return b
+    if x < a:
+        return a
+    return x
