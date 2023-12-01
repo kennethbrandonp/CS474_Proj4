@@ -1,7 +1,9 @@
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+from pgm import PGM
 
+#1D FFT function:
 def fft(data, nn, isign): #Cooley-Tukey modified
     n = nn
     data = np.array(data, dtype = complex) #For imaginary numbers
@@ -25,6 +27,7 @@ def fft(data, nn, isign): #Cooley-Tukey modified
         result.imag = np.round(result.imag, 10)
         return result
 
+#2D FFT function:
 def fft2D(n, m, real, imag, isign):
     #Combine to put into our 1D DFT:
     data = real + 1j * imag
@@ -51,6 +54,7 @@ def fft2D(n, m, real, imag, isign):
     # #Flip it back to original orientation:
     # inverseReal = inverseReal[::-1, ::1]
 
+#Plotting DFT graphs:
 def plotDFT(data, title, xlabel, ylabel, filename):
     graph = plt.figure()    #Different graph every time
     plt.title(title)
@@ -59,12 +63,14 @@ def plotDFT(data, title, xlabel, ylabel, filename):
     plt.ylabel(ylabel)
     plt.savefig(filename + ".png")
 
+#Shifting magnitude:
 def magShift(data):
     n = len(data)
     half = n // 2
     return np.concatenate((data[half:], data[:half]))
 
-def visDFT(pgm, centered):
+#Visualizing the DFT:
+def visualizeDFT(pgm, centered):
     #Center spectrum:
     if centered == 1:
         for i in range(0, pgm.y):
@@ -83,18 +89,18 @@ def visDFT(pgm, centered):
         for k in range(0, pgm.x):
             index = i * pgm.x + k
             m = freal[i][k] * freal[i][k] + fimag[i][k] * fimag[i][k]
-            pgm.pixels[i][k] = clamp(0, 255, 120 * math.log2(1 + math.sqrt(m)))
+            #Update pixels:
+            pgm.pixels[i][k] = np.clip(120 * np.log2(1 + np.sqrt(m)), 0, 255) #Replaced "Clamp"
 
     return pgm.pixels   #We can specify what the name is saved outside the function
-    #Save centered image:
-    # if centered == 1:
-    #     pgm.save("_centered_dft")
-    # else:
-    #     pgm.save("_dft")
 
-def clamp(a, b, x):
-    if x > b:
-        return b
-    if x < a:
-        return a
-    return x
+#Visualizing filters:
+def visualizeFilter(data):
+    #Getting everything in grayscale: 
+    for i in range(0, len(data)):
+        for k in range(0, len(data)):
+            re = data[i][k]
+            im = data[i][k]
+            #Update pixels:
+            data[i][k] = np.clip(255 * math.log(1 + math.sqrt(re * re + im * im)), 0, 255)
+    return data

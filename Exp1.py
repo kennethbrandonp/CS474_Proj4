@@ -1,49 +1,79 @@
 from pgm import PGM
 import numpy as np
 import fft
+import math
 
-def bandRejectFilter(pgm, centerx, centery, radius):
-    data = np.array(pgm.pixels)
+def sampleBandReject(u, v, w, radius, centerX, centerY, n):
+    dd = (u - centerX) * (u - centerX) + (v - centerY) * (v - centerY)
+    if dd == radius * radius:
+        return 0.0  #Avoids division by zero in the case it happens
+    denom = 1 + (((math.sqrt(dd) * w) / (dd - (radius * radius))) ** (2 * n))
 
-    #Apply forward:
-    real, imag = fft.fft2D(pgm.x, pgm.y, data, np.zeros_like(data), -1)
+    return 1 / denom
 
-    #Create a filter mask:
-    mask = np.ones_like(real)
-    y, x = np.ogrid[:pgm.y, :pgm.x] #Makes a circle around the origin
-    mask[((x - centerx)**2 + (y - centery)**2) < radius**2] = 0  #Set any values within band to zero
+def filterDataBand(pgm):    #For visualizing the band filter
+    for i in range(0, pgm.x):
+        for k in range(0, pgm.y):
+            # Use the band reject filter function:
+            filter = sampleBandReject(k - pgm.x // 2, pgm.y // 2 - i, 4, 36, 0, 0, 1) #Parameters are adjusted according to where the noise is
+            # Update the output image pixels:
+            pgm.pixels[i][k] = filter
 
-    #Apply this filter to the DFT of the image (Complex multiplication)
-    filteredReal = real * mask
-    filteredImag = imag * mask
+    return pgm.pixels
 
-    #Apply inverse to get original image filtered back:
-    inverseReal, inverseImag = fft.fft2D(pgm.x, pgm.y, filteredReal, filteredImag, 1)
+def applyBandFilter(pgm):   #Complex mutliplication is not working correctly, images are jumbled up
+    #Establish real and imaginary components:
+    real = np.array(pgm.pixels)
+    imag = np.zeros_like(real)
 
-    #Round to the nearest positive integer:
-    inverseReal = np.clip(np.ceil(inverseReal).astype(int), 0, 255)
+    #Forward FFT:
+    freal, fimag = fft.fft2D(pgm.x, pgm.y, real, imag, -1)
 
-    #Flip it back to the original orientation
-    inverseReal = inverseReal[::-1, ::1]
+    for i in range(0, pgm.x):
+        for k in range(0, pgm.y):
+            s = np.zeros(2, dtype=complex)
+            # s[0] = samp_bw_notch_reject(x, y, 3, 32, 16, 1)
+            # s[0] *= samp_bw_notch_reject(x, y, 3, -32, 16, 1)
+            s[0] = sampleBandReject(k - pgm.x // 2, pgm.y // 2 - i, 4, 36, 0, 0, 1)
+            s[1] = 0    #Complex portion
 
-    return inverseReal
+            #Perform complex multiplication
+            filter = np.multiply([freal[i][k], fimag[i][k]], s)
+
+            #Update the real and imaginary parts of pgm.pixels
+            freal[i][k] = filter[0]
+            fimag[i][k] = filter[1]
+
+    #Inverse FFT to get our image back:
+    ireal, iimag = fft.fft2D(pgm.x, pgm.y, freal, fimag, 1)
+
+    return ireal
 
 def partA(pgm):
-    #Get the original spectrum so we can apply filters:
-    tempPGM = pgm
-    # originalSpectrum = fft.visDFT(tempPGM, 1) #To visualize the spectrum
+    #Get the original spectrum so we can apply filters: *Done
+    # tempPGM = pgm
+    # originalSpectrum = fft.visualizeDFT(tempPGM, 1) #To visualize the spectrum
     # originalSpectrum = np.clip(np.ceil(originalSpectrum).astype(int), 0, 255)
     # tempPGM.pixels = originalSpectrum
     
-    # tempPGM.save("originalSpectrum")#For visualizing the spectrum
+    #tempPGM.save("originalSpectrum")#For visualizing the spectrum
 
-    #Band-Reject Filter:
-    tempPGM.pixels = bandRejectFilter(pgm, 32, 16, 1)  #Adjusted band(Still needs tuning)
-    bandReject = fft.visDFT(tempPGM, 1) #Visualize band reject filter
-    bandReject = np.clip(np.ceil(bandReject).astype(int), 0, 255)
-    tempPGM.pixels = bandReject
-
+    #Band-Reject Filter:    ***In progress
+    tempPGM = pgm
+    bandFilteredImage = applyBandFilter(tempPGM)
+    bandFilteredImage = np.clip(np.ceil(bandFilteredImage).astype(int), 0, 255)
+    bandFilteredImage = bandFilteredImage[::-1, ::1]
+    tempPGM.pixels = bandFilteredImage
+    
     tempPGM.save("bandRejectFilter")
+
+    #Visualizing:   *Done
+    # tempPGM = pgm
+    # bandFilter = filterDataBand(tempPGM)
+    # bandFilter = fft.visualizeFilter(bandFilter)
+    # bandFilter = np.clip(np.ceil(bandFilter).astype(int), 0, 255)
+    # tempPGM.pixels = bandFilter
+    # tempPGM.save("filter") #Visualize our filter
     
     ##Band Reject filter and what parameters we're using:
     ###Which frequency range we're rejecting
