@@ -14,9 +14,9 @@ def sampleBandReject(u, v, w, radius, centerX, centerY, n):
 def filterDataBand(pgm):    #For visualizing the band filter
     for i in range(0, pgm.x):
         for k in range(0, pgm.y):
-            # Use the band reject filter function:
+            #Use the band reject filter function:
             filter = sampleBandReject(k - pgm.x // 2, pgm.y // 2 - i, 4, 36, 0, 0, 1) #Parameters are adjusted according to where the noise is
-            # Update the output image pixels:
+            #Update the output image pixels:
             pgm.pixels[i][k] = filter
 
     return pgm.pixels
@@ -40,7 +40,7 @@ def applyBandFilter(pgm):   #Complex mutliplication is not working correctly, im
             #Perform complex multiplication
             filter = np.multiply([freal[i][k], fimag[i][k]], s)
 
-            #Update the real and imaginary parts of pgm.pixels
+            #Update the real and imaginary parts:
             freal[i][k] = filter[0]
             fimag[i][k] = filter[1]
 
@@ -61,8 +61,8 @@ def partA(pgm):
     #Band-Reject Filter:    ***In progress
     tempPGM = pgm
     bandFilteredImage = applyBandFilter(tempPGM)
-    bandFilteredImage = np.clip(np.ceil(bandFilteredImage).astype(int), 0, 255)
-    bandFilteredImage = bandFilteredImage[::-1, ::1]
+    bandFilteredImage = np.clip(np.ceil(bandFilteredImage).astype(int), 0, 255) #Round everything
+    bandFilteredImage = bandFilteredImage[::-1, ::1]    #Flip image to original orientation
     tempPGM.pixels = bandFilteredImage
     
     tempPGM.save("bandRejectFilter")
@@ -74,13 +74,6 @@ def partA(pgm):
     # bandFilter = np.clip(np.ceil(bandFilter).astype(int), 0, 255)
     # tempPGM.pixels = bandFilter
     # tempPGM.save("filter") #Visualize our filter
-    
-    ##Band Reject filter and what parameters we're using:
-    ###Which frequency range we're rejecting
-    ###We'll have to tune the size of the band
-    ###Filter frequency domain
-    ###Get filtered 2D DFT from image
-    ###Save filtered image
 
     #Spatial Domain Gaussian Filtering:
     ##Create Gaussian filter
@@ -89,6 +82,10 @@ def partA(pgm):
     ##Save filtered image
 
     #Compare the two filtered spectras.(Report)
+
+def partB(pgm):
+    #Create notch-pass filters and show noise.
+    pass
 
 #Make our image, pass it into partA:
 image = PGM("boy_noisy")
