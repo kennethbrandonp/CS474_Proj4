@@ -89,3 +89,29 @@ class PGM():
             file.write(line)
         
         file.close()
+    
+    # Helper functions to transform pixels to and from natural log space
+    def log_transform(self):
+        # Log transform every pixel value
+        for x in range(self.x):
+            for y in range(self.y):
+                self.pixels[x][y] = int(round(np.log(self.pixels[x][y] + 1) * 255 / np.log(256)))
+                
+    def exp_transform(self):
+        # Exponential transform every pixel value
+        for x in range(self.x):
+            for y in range(self.y):
+                self.pixels[x][y] = int(round(np.expm1(self.pixels[x][y] / 255 * np.log1p(256))))
+
+    def center_image(self):
+        # Calculate the center of the image
+        center_x, center_y = self.x // 2, self.y // 2
+
+        # Shift the image to center it
+        centered_pixels = np.roll(self.pixels, center_x, axis=0)
+        centered_pixels = np.roll(centered_pixels, center_y, axis=1)
+
+        # Update the pixels with the centered values
+        self.pixels = centered_pixels
+
+    
