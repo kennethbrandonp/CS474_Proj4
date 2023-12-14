@@ -40,7 +40,8 @@ def fft2D(n, m, real, imag, isign):
     for j in range(m):
         data[:, j] = fft(data[:, j], n, isign)
     
-    if isign == -1:
+    if isign == 1:
+        # TESTING WITH NORMALIZATION IN INV DFT
         data /= n * m   #Normlization
 
     real = data.real
@@ -62,6 +63,17 @@ def plotDFT(data, title, xlabel, ylabel, filename):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.savefig(filename + ".png")
+
+def plot_2d_fft(data, title, save_path=None):
+    magnitude_spectrum = np.abs(data)
+    plt.imshow(np.log(1 + magnitude_spectrum), cmap='gray')  
+    plt.title(title)
+    plt.colorbar()
+    
+    if save_path:
+        plt.savefig(save_path, format='pdf')
+    else:
+        plt.show()
 
 #Shifting magnitude:
 def magShift(data):
@@ -104,3 +116,4 @@ def visualizeFilter(data):
             #Update pixels:
             data[i][k] = np.clip(255 * math.log(1 + math.sqrt(re * re + im * im)), 0, 255)
     return data
+

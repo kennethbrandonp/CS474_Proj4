@@ -91,18 +91,42 @@ class PGM():
         file.close()
     
     # Helper functions to transform pixels to and from natural log space
-    def log_transform(self):
+    ########################################################
+    # LOG / EXP FUNCTIONS THAT HAVE A BIT OF NORMALIZATION: GOOD RESULTS BUT NOT NECESSARY FOR ASSIGNMENT
+    # def log_transform(self):
+    #     # Log transform every pixel value
+    #     for x in range(self.x):
+    #         for y in range(self.y):
+    #             self.pixels[x][y] = (np.log(self.pixels[x][y] + 1) * 255 / np.log(255))
+                
+    # def exp_transform(self):
+    #     # Exponential transform every pixel value
+    #     for x in range(self.x):
+    #         for y in range(self.y):
+    #             self.pixels[x][y] = int(round(np.expm1(self.pixels[x][y] / 255 * np.log1p(255))))
+    ########################################################
+
+    def log_transform(self, c):
         # Log transform every pixel value
         for x in range(self.x):
             for y in range(self.y):
-                self.pixels[x][y] = int(round(np.log(self.pixels[x][y] + 1) * 255 / np.log(256)))
+                self.pixels[x][y] = (c*(np.log(self.pixels[x][y] + 1)))
                 
-    def exp_transform(self):
-        # Exponential transform every pixel value
+    def exp_transform(self, c):
+    # Exponential transform every pixel value
         for x in range(self.x):
             for y in range(self.y):
-                self.pixels[x][y] = int(round(np.expm1(self.pixels[x][y] / 255 * np.log1p(256))))
+                # Scale the pixel value back to the original range [0, 255]
+                
+                value = int(round(c*np.expm1(self.pixels[x][y])))
+                
+                value2 = int(round(np.expm1(self.pixels[x][y]/c)))
+                
+                # Clip the values to the valid range [0, 255]
+                self.pixels[x][y] = int(round(max(0, min(value2, 255))))
 
+        self.pixels = self.pixels.astype(int)
+                
     def center_image(self):
         # Calculate the center of the image
         center_x, center_y = self.x // 2, self.y // 2
@@ -115,3 +139,22 @@ class PGM():
         self.pixels = centered_pixels
 
     
+    def compute_frequency_ranges(self, delta_u, delta_v):
+        # Determine the size of the FFT result
+        fft_result_size_u, fft_result_size_v = self.x, self.y
+
+        # Compute the Nyquist frequencies in the u and v directions
+        nyquist_u = 1 / (2 * delta_u)
+        nyquist_v = 1 / (2 * delta_v)
+
+        # Determine the minimum and maximum frequencies
+        u_min = -nyquist_u
+        u_max = nyquist_u
+        v_min = -nyquist_v
+        v_max = nyquist_v
+
+        # Compute the corresponding frequency values for each index in the FFT result
+        u_values = np.fft.fftfreq(fft_result_size_u, delta_u)
+        v_values = np.fft.fftfreq(fft_result_size_v, delta_v)
+
+        return u_min, u_max, v_min, v_max, u_values, v_values
